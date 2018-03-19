@@ -1,0 +1,26 @@
+---
+title: 'Introduction (a more involved ‘hello world’). '
+author: Keaton Wilson
+date: '2018-03-19'
+slug: introduction-a-more-involved-hello-world
+categories:
+  - data science
+  - intro
+  - general
+tags:
+  - beans
+  - vocs
+  - science
+---
+
+Hello! I'm an ecologist and data scientist working at the University of Arizona in Tucson. I'm currently a postdoctoral fellow with the National Institute 
+of Health (NIH), but as that position is coming to a close, am on the job market looking for new projects and challenges.  
+
+Throughout my fellowship at the University of Arizona, I've become increasingly interested in data science, and have taken the plunge in applying some of the techniques I've developed a scientist to outside projects. I decided to start this blog to detail and record some of my experiences with these projects, and document my journey into data science.  
+
+If you're mainly interested in my research as an ecologist (on bugs and immune systems and tasty plants), you can check out my [main website](http://www.keatonwilson.net). Though this blog will have bits and bobs of my science, it's mostly about data science, side-projects and tools and tricks I've used. 
+
+I hope you enjoy! And please feel free to drop me a line any time if you have questions about code, techniques, or comments!
+
+Cheers!
+

@@ -86,10 +86,17 @@ canonifyurls = true
   url = "https://github.com/keatonwilson"
 [[menu.links]]
   weight = 2
+  identifier = "Twitter"
+  name = "Twitter"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-twitter\"></i>"
+  url = "https://www.twitter.com/keatonwilson"
+[[menu.links]]
+  weight = 3
   identifier = "mainwebsite"
   name = "Main Website"
-  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-home\"></i>"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-\"></i>"
   url = "http://www.keatonwilson.net"
+
 
 [[menu.misc]]
   weight = 1

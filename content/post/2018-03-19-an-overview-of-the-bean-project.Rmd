@@ -1,0 +1,48 @@
+---
+title: An overview of the bean project
+author: Keaton Wilson
+date: '2018-03-19'
+slug: an-overview-of-the-bean-project
+categories:
+  - data science
+  - bean project
+tags:
+  - beans
+  - markets
+  - prediction
+  - munging
+---
+### Beans  
+
+I'm the son of a bean broker. Both my dad and his dad worked in the dry bean industry in the US - which seems niche, but it's really fascinating. When I originally started thinking about applying data science tools to problems outside of academia (in my case, outside of plants and insects and ecology), I immediately thought of beans. It's something my father and I have talked about frequently, and a world I've always been interested in. 
+
+Immediately, I thought about trying to figure out whether I could use some modern machine learning algorithms to predict market prices in the future. There is a fair amount of speculation in the market, but most people in the industry (according my inside source) speculate based on acquired knowledge, not through quantitative models. I wanted to see if I could build a model that predicts future prices, and was interested in the level of accuracy a model could achieve in a system that has the level of volatility that beans markets do.  
+
+I'm going to walk through my process of this project in a series of posts - from wrangling messy data all the way through building some machine learning models, tuning these models and making predictions on brand new data.  
+
+First things first though, we need some data.  
+
+### Historic bean data and where to find it
+
+Once I had a plan in mind, I started scouring the internet for data. Certainly, there must be some agency that tracks and records prices of different varieties of beans, other useful variables (production levels by year, how much was imported and exported, etc.), right?! And this data will hopefully be in a really nice, useable form for us to import into R and start doing some analysis, right?! 
+
+Nerp.  
+
+Here is the best source I could find [ERS USDA](http://usda.mannlib.cornell.edu/MannUsda/viewDocumentInfo.do?documentID=1394).  
+
+You can see three things immediately:  
+1.  There are a lot of data available **YAY**  
+2.  They're all in excel sheets **booo**  
+3.  There isn't data until present-day, but from 1980-2010.  
+
+Not only that, but many of the types of data I needed were buried in Excel files with multiple sheets and crazy formatting. 
+
+It looks like I'm in for a lesson in munging (or cleaning). 
+
+### Conclusions  
+
+In the next post, I'll outline the first steps I used to pull out useful data from awful Excel Files, and get everything into one dataframe that's ready for analysis.
+
+The repository for this entire project (including the data), can be found on [GitHub](https://github.com/keatonwilson/beans). 
+
+
