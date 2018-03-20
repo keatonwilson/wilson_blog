@@ -1,0 +1,88 @@
+---
+title: Bean munging and Excel Wrangling
+author: Keaton Wilson
+date: '2018-03-20'
+slug: bean-munging-and-excel-wrangling
+categories:
+  - bean project
+  - data science
+tags:
+  - beans
+  - munging
+---
+
+## Messy Excel Files  
+
+So, as I discussed last time, the first big hurdle in starting to explore the domestic dry bean market data was overcoming
+the terror of working with a bunch of really messy, really gnarly excel files. 
+
+The main one looks like this:![](/img/beans1.png)  
+
+Lots of problems, right? The data are in multiple sheets in a single workbook, they're not uniform, etc. It's an R-user's nightmare, but the reality is that data often look like this. So let's get to work. 
+
+A brief point - here is the type of data we can expect from this workbook:
+*  year
+*  month
+*  day
+*  class (type of bean or variety)
+*  price
+
+### Step 1. Reading in the data  
+
+First things first, let's load up some useful packages  
+
+```{r message = FALSE} 
+library(tidyverse) 
+library(readxl)
+library(XLConnect)
+```
+
+We'll use the handy functions in readxl and XLConnect to read in the the excel sheets and then use tidyverse to do a bunch of stuff to them to clean them up. 
+
+All files can be found at my github repo for [this project](https://github.com/keatonwilson/beans/tree/master/data).  
+
+Download the appropriate files to your local working directory - and you're ready to go. 
+
+Let's read in the data with readxl's loadWorkbook function (if you were better at making the RCurl package work with you, you could pull it directly from my GitHub too):
+```{r tidy=TRUE, warning=FALSE}
+#Loading Workbooks
+dealer_price = loadWorkbook(file = 
+                      "/Users/KeatonWilson/Documents/Projects/beans2/data/Weekly_Dealer_price.xls") 
+#Remember your directory will be different
+
+#Turning workbook into a list
+dealer_price_list = readWorksheet(dealer_price, sheet = getSheets(dealer_price))
+
+#Lots of errors with this, but don't worry. 
+
+#Looks good...lots of NAs, but there is data in there. 
+head(dealer_price_list[[1]], n = 20)
+```
+
+Great! Now we have a list of the data from each year (where each item in the list is a dataframe of market data for different types of beans for each year). 
+
+If we look through all the dataframes in our list - there is a bunch of junk at the top of each one we need to get rid of. Let's use the handy `{r} lapply ` function for this. 
+
+``` {r tidy=TRUE}
+
+#Bunch of garbage on the top of every data frame - need to iterate through the list and delete the first 11 rows
+dealer_price_list = lapply(dealer_price_list, function(x) x[-c(1:11),])
+head(dealer_price_list[[1]], n = 20)
+```
+
+Ok, now it gets gnarly.  
+Here is the problem - not all data frames have the same variables, and it looks like variable names are hidden somewhere down in each dataframe.  
+I ended up going throgh each data frame manually - obviously this doesn't scale super well - and is laborious, but I couldn't come up with a clever way to sort this out. Here is an example of the type of code I used: 
+
+``` {r tidy=TRUE}
+#1981
+glimpse(dealer_price_list[[1]])
+dealer_price_list[[1]]
+dealer_price_list[[1]] = dealer_price_list[[1]][-c(64:100),-14]
+colnames(dealer_price_list[[1]]) = c("Month", "Day", "Pinto", "Grt_Northern", "Pink", "Sm_Red", "Navy", "B_Lima", "L_Lima", "Blackeye",
+                                     "Small_White", "Kidney", "Garbanzo")
+glimpse(dealer_price_list[[1]])
+```
+
+Look at how nice that looks! Now it's time to iterate through all the dataframes. You may be thinking to yourself, "Hey, why don't you do that with a loop, or with lapply?". That's a great idea... except that dataframes vary in their content. Manual brute-force it is. 
+
