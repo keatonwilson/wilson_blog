@@ -20,13 +20,13 @@ The main one looks like this:![](/img/beans1.png)
 
 Lots of problems, right? The data are in multiple sheets in a single workbook, they're not uniform, etc. It's an R-user's nightmare, but the reality is that data often look like this. So let's get to work. 
 
-A brief point - here is the type of data we can expect from this workbook:
-*  year
-*  month
-*  day
-*  class (type of bean or variety)
-*  price
-
+A brief point - here is the type of data we can expect from this workbook:  
+  *  year  
+  *  month  
+  *  day  
+  *  class (type of bean or variety)  
+  images*  price  
+ 
 ### Step 1. Reading in the data  
 
 First things first, let's load up some useful packages  
@@ -84,5 +84,23 @@ colnames(dealer_price_list[[1]]) = c("Month", "Day", "Pinto", "Grt_Northern", "P
 glimpse(dealer_price_list[[1]])
 ```
 
-Look at how nice that looks! Now it's time to iterate through all the dataframes. You may be thinking to yourself, "Hey, why don't you do that with a loop, or with lapply?". That's a great idea... except that dataframes vary in their content. Manual brute-force it is. 
+Look at how nice that looks! Now it's time to iterate through all the dataframes. You may be thinking to yourself, "Hey, why don't you do that with a loop, or with lapply?". That's a great idea... except that dataframes vary in their content. Manual brute-force it is.  
+
+Let's skip ahead a bit - with a bit more munging and cleaning, we end up with a very nice long-format dataframe, that you can find [here](https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv).  
+
+Or alternatively:  
+```{r}
+dealer_price_long = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv")
+dealer_price_long 
+```
+
+Also note that this is in tibble format now. Thanks, Hadley. :)
+
+### Conclusions
+
+This is a great start. We went from an awful Excel Workbook to a slim and trim tidy dataframe with ~24,000 entries of bean prices from 1981-2010 - this is going to be a big chunk of the data we end up splitting into training and test sets down the road for Machine Learning.  
+
+A small aside - there was a bunch of munging and cleaning involved between some of the steps above. If you're interested in a deeper dive into what was entailed, check out the full [source code](https://github.com/keatonwilson/beans/blob/master/data_organization.R) - it's pretty well annotated and can give you a nice look at things.  
+
+Cheers!
 
