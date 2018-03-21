@@ -21,11 +21,12 @@ The main one looks like this:![](/img/beans1.png)
 Lots of problems, right? The data are in multiple sheets in a single workbook, they're not uniform, etc. It's an R-user's nightmare, but the reality is that data often look like this. So let's get to work. 
 
 A brief point - here is the type of data we can expect from this workbook:  
-  *  year  
-  *  month  
-  *  day  
-  *  class (type of bean or variety)  
-  images*  price  
+
+* year  
+* month  
+* day  
+* class (type of bean or variety)  
+* price  
  
 ### Step 1. Reading in the data  
 
