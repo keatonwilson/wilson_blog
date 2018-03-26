@@ -40,7 +40,7 @@ library(XLConnect)</code></pre>
 <p>We’ll use the handy functions in readxl and XLConnect to read in the the excel sheets and then use tidyverse to do a bunch of stuff to them to clean them up.</p>
 <p>All files can be found at my github repo for <a href="https://github.com/keatonwilson/beans/tree/master/data">this project</a>.</p>
 <p>Download the appropriate files to your local working directory - and you’re ready to go.</p>
-<p>Let’s read in the data with readxl’s loadWorkbook function (if you were better at making the RCurl package work with you, you could pull it directly from my GitHub too):</p>
+<p>Let’s read in the data with readxl’s loadWorkbook function (if you were better at making the RCurl package work than I am, you could pull it directly from my GitHub too):</p>
 <pre class="r"><code># Loading Workbooks
 dealer_price = loadWorkbook(file = &quot;/Users/KeatonWilson/Documents/Projects/beans2/data/Weekly_Dealer_price.xls&quot;)
 # Remember your directory will be different
@@ -165,7 +165,7 @@ head(dealer_price_list[[1]], n = 20)</code></pre>
 ## 31 43.50 39.25 38.50 37.50 46.25 51.50 38.50 32.75 52.50 35.00 44.50  &lt;NA&gt;</code></pre>
 <p>Ok, now it gets gnarly.<br />
 Here is the problem - not all data frames have the same variables, and it looks like variable names are hidden somewhere down in each dataframe.<br />
-I ended up going throgh each data frame manually - obviously this doesn’t scale super well - and is laborious, but I couldn’t come up with a clever way to sort this out. Here is an example of the type of code I used:</p>
+I ended up going through each data frame manually - obviously this doesn’t scale super well - and is laborious, but I couldn’t come up with a clever way to automate this, but here is an example of the type of code I used:</p>
 <pre class="r"><code># 1981
 glimpse(dealer_price_list[[1]])</code></pre>
 <pre><code>## Observations: 80

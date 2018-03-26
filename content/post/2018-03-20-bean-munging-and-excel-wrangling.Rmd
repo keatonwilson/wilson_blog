@@ -44,7 +44,7 @@ All files can be found at my github repo for [this project](https://github.com/k
 
 Download the appropriate files to your local working directory - and you're ready to go. 
 
-Let's read in the data with readxl's loadWorkbook function (if you were better at making the RCurl package work with you, you could pull it directly from my GitHub too):
+Let's read in the data with readxl's loadWorkbook function (if you were better at making the RCurl package work than I am, you could pull it directly from my GitHub too):
 ```{r tidy=TRUE, warning=FALSE}
 #Loading Workbooks
 dealer_price = loadWorkbook(file = 
@@ -73,7 +73,7 @@ head(dealer_price_list[[1]], n = 20)
 
 Ok, now it gets gnarly.  
 Here is the problem - not all data frames have the same variables, and it looks like variable names are hidden somewhere down in each dataframe.  
-I ended up going throgh each data frame manually - obviously this doesn't scale super well - and is laborious, but I couldn't come up with a clever way to sort this out. Here is an example of the type of code I used: 
+I ended up going through each data frame manually - obviously this doesn't scale super well - and is laborious, but I couldn't come up with a clever way to automate this, but here is an example of the type of code I used: 
 
 ``` {r tidy=TRUE}
 #1981
