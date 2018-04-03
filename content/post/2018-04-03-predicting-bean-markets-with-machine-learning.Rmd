@@ -1,0 +1,166 @@
+---
+title: Predicting Bean Markets with Machine Learning
+author: ''
+date: '2018-04-03'
+slug: predicting-bean-markets-with-machine-learning
+categories:
+  - bean project
+  - data science
+  - machine learning
+tags:
+  - beans
+  - markets
+  - prediction
+---
+
+## The gist
+
+Let's dive a bit deeper into the bean project - this post is the first in a series that will hopefully get at the meat of the project. One of the main questions of this endeavor is: Can we build a model that does a good job of predicting future market prices?  
+
+More generally: If I know something about the price of garbanzo beans today, and some of the market characteristics, can I predict with a good degree of accuracy what the price will be 6 months from now?  
+
+Today we'll dive into a few processes we need to go through before the data are ready for analysis:  
+
+  *  Adding information about future prices  
+  *  Preprocessing and cleaning  
+  *  Splitting the data into training and test sets  
+  *  A few of the algorithms we can try out  
+    
+## Data things - loading in and initial exminations
+
+```{r message=FALSE, warning=FALSE} 
+#Packages we'll need
+library(caret)
+library(tidyverse)
+library(lubridate)
+
+
+#Snagging the sort-of-cleaned data (remember last week's post) from github
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+
+#Lots of warning, but it works. Just ignore them - let's look at the data
+glimpse(bean_master_import)
+
+```
+
+## Back to the future  
+
+So, now that we have our data into our working space as a nice and tidy tibble, we want to do a few things before we start doing some prediction.  
+The first is that we want to generate future data - so that for a given date, we know what the average monthly price is 6 months in the future. 
+
+Why 6 months in the future, you might ask? Well, the time interval can be changed to anything we want, but this represents a typical turn-around time for brokers in the market. You'll see in the code below that it's fairly easy to build models that would predict for different time periods into the future.   
+
+Why average monthly price? Some of our data down the line (and on some pieces of this project that I'm working on now) only give us data on monthly-scales, not the nice weekly scales present in this data. Yes, it's a bit a bigger temporal grain-size, but, as I'll show you, the models still do an excellent job. 
+
+If you look at the data summary above, you can see that future_date and future_weekly_avg_price are already in this data frame... here is how to generate the future date using the absolutely fantastic [lubridate package](http://lubridate.tidyverse.org). 
+
+``` {r eval=FALSE} 
+bean_master_import$future_date = bean_master$date + months(6)
+bean_master_import$week = week(bean_master$date)
+```
+
+Next, we add the future month and year, and calculate monthly average prices. In the first step, I'm adding the month and year to the original dataframe, and in the second, I'm making a new dataframe that we're going to join back to the first to get our future average monthly prices associated with dates.
+
+```{r}
+#Adding future month and year
+bean_master_import = bean_master_import %>%
+  mutate(future_month = month(future_date, label = TRUE, abbr = FALSE),
+         future_year = year(future_date)) 
+
+#Making the dataframe we're going to join
+bean_master_future_to_join = bean_master_import %>%
+  group_by(class, year, month) %>%
+  summarize(monthly_average_price = mean(price))
+
+#joining it back on, but with the key column set to future date instead of date
+bean_master_import = bean_master_import %>%
+  inner_join(bean_master_future_to_join, by = c("future_year" = "year", "future_month" = "month", "class" = "class")) %>%
+  rename(future_monthly_average_price = monthly_average_price) 
+
+#Looks reasonable
+head(bean_master_import$future_monthly_average_price, n = 20)
+
+#This looks reasonable too
+select(bean_master_import, future_monthly_average_price, price)
+
+```
+
+Just a bit more cleaning - getting rid of some columns we won't need and changing month and day to factors. 
+
+```{r}
+
+#Cleaning up the dataframe a bit
+bean_master_import = bean_master_import %>%
+  select(-future_date, -future_weekly_avg_price, -year) %>%
+  mutate(day = day(date))
+
+bean_master_import$future_month = factor(bean_master_import$future_month)
+bean_master_import$day = factor(bean_master_import$day)
+bean_master_import$class = factor(bean_master_import$class)
+
+bean_master_import$imports = as.numeric(bean_master_import$imports)
+```
+
+## Preprocessing
+
+Ok, now we can start preprocessing the data before we feed it into our ML algorithms. Preprocessing is essential because:  
+
+  1. It get's rid of NAs, which are the scurge of ML algorithms
+  2. [It scales and centers your data](https://en.wikipedia.org/wiki/Feature_scaling), which means that all the variables have more equal weight on models  
+
+It's also super easy with the [caret](http://topepo.github.io/caret/index.html) package.  
+
+``` {r}
+#Setting seed for reproducibility
+set.seed(42)
+
+#First, let's cut it down to the explanatory variables we want
+bean_master_import_slim = bean_master_import %>%
+  select(date, class, price, whole_market_avg, whole_market_sum, 
+         class_market_share, planted, harvested, yield, production,
+         month, imports)
+
+#Preprocessing
+preProc2 = preProcess(bean_master_import_slim, method = c("center", "scale", "knnImpute", "zv"))
+preProc2
+```
+It's worth discussing what's going on here.  
+
+The `preProcess() ` function from caret takes a dataframe, and then in the methods argument you tell it what kind of preprocessing you want it to do. Here, I've centered and scaled the variabels ("center", "scale"), used k-nearest neighbors ("knnImpute") to impute missing values, and gotten rid of any columns that have zero variance ("zv") (aren't helpful).
+
+You might expect that when we call preProc2, we get the data, but actually... we don't. caret has just built a framework for preprocessing the data, so we'll need to apply it in the next step. However, calling the object does give us nice information about the number of variables that were ignored, centered etc. 
+
+
+```{r}
+#Doing the preprocessing
+bean_ML_import_pp = predict(preProc2, bean_master_import_slim)
+
+#glimpsing results
+glimpse(bean_ML_import_pp)
+bean_ML_import_pp$month = factor(bean_ML_import_pp$month)
+
+#binding the response and dates variable back on
+bean_ML_import_pp$future_monthly_avg_price = bean_master_import$future_monthly_average_price
+```
+And finally, we get to split our data into training and test sets (check out the [last post](https://keatonwilson.github.io/2018/03/the-ecologist-jumps-into-the-deep-scary-waters-of-machine-learning/) for info on this as a tenant of machine learning. 
+
+Caret to the rescue again - makes this super-easy.  
+```{r}
+#Training and test sets
+index1 = createDataPartition(bean_ML_import_pp$future_monthly_avg_price, p = 0.80, list = FALSE)
+bean_ML_import_train = bean_ML_import_pp[index1,]
+bean_ML_import_test = bean_ML_import_pp[-index1,]
+
+```
+
+The `createDataPartition()` function is doing the work here. We're telling it what the response variable is (here future monthly average price), what we want our data split to be (here 80% training and 20% test), and that we don't want the output in the form of a list.  This gives us a random sample index, which we can then apply to our data frame to break it into training and test sets. 
+
+So, now that we have fully preprocessed training and test sets, we're ready for the next step - jumping into some algorithms. I'll save this for the next post (this is already super-long), but as a quick preview, we'll run a variety of models to figure out what does the best job of predicting future prices:  
+
+  1. [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)
+  2. [CART models](https://machinelearningmastery.com/classification-and-regression-trees-for-machine-learning/)
+  3. [Random forests](https://en.wikipedia.org/wiki/Random_forest)
+  4. [Artificial Neural Nets](https://en.wikipedia.org/wiki/Artificial_neural_network) 
+
+Cheers!
+
