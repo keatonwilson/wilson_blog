@@ -36,21 +36,23 @@ the terror of working with a bunch of really messy, really gnarly excel files.</
 <p>First things first, let’s load up some useful packages</p>
 <pre class="r"><code>library(tidyverse) 
 library(readxl)
+library(rJava)
 library(XLConnect)</code></pre>
 <p>We’ll use the handy functions in readxl and XLConnect to read in the the excel sheets and then use tidyverse to do a bunch of stuff to them to clean them up.</p>
 <p>All files can be found at my github repo for <a href="https://github.com/keatonwilson/beans/tree/master/data">this project</a>.</p>
 <p>Download the appropriate files to your local working directory - and you’re ready to go.</p>
 <p>Let’s read in the data with readxl’s loadWorkbook function (if you were better at making the RCurl package work than I am, you could pull it directly from my GitHub too):</p>
-<pre class="r"><code># Loading Workbooks
-dealer_price = loadWorkbook(file = &quot;/Users/KeatonWilson/Documents/Projects/beans2/data/Weekly_Dealer_price.xls&quot;)
-# Remember your directory will be different
+<pre class="r"><code>#Loading Workbooks
+dealer_price = loadWorkbook(file = 
+                      &quot;/Users/KeatonWilson/Documents/Projects/beans2/data/Weekly_Dealer_price.xls&quot;) 
+#Remember your directory will be different
 
-# Turning workbook into a list
+#Turning workbook into a list
 dealer_price_list = readWorksheet(dealer_price, sheet = getSheets(dealer_price))
 
-# Lots of errors with this, but don&#39;t worry.
+#Lots of errors with this, but don&#39;t worry. 
 
-# Looks good...lots of NAs, but there is data in there.
+#Looks good...lots of NAs, but there is data in there. 
 head(dealer_price_list[[1]], n = 20)</code></pre>
 <pre><code>##    Contents..Weekly.Dry.Bean.Prices..by.Class..and.Annual.Summary Col2
 ## 1  Source: USDA, Agricultural Marketing Service, Bean Market News &lt;NA&gt;
@@ -117,9 +119,8 @@ head(dealer_price_list[[1]], n = 20)</code></pre>
 ## 20    32.75 34.75  34.25    41.00  &lt;NA&gt;</code></pre>
 <p>Great! Now we have a list of the data from each year (where each item in the list is a dataframe of market data for different types of beans for each year).</p>
 <p>If we look through all the dataframes in our list - there is a bunch of junk at the top of each one we need to get rid of. Let’s use the handy <code>{r} lapply</code> function for this.</p>
-<pre class="r"><code># Bunch of garbage on the top of every data frame - need to iterate through
-# the list and delete the first 11 rows
-dealer_price_list = lapply(dealer_price_list, function(x) x[-c(1:11), ])
+<pre class="r"><code>#Bunch of garbage on the top of every data frame - need to iterate through the list and delete the first 11 rows
+dealer_price_list = lapply(dealer_price_list, function(x) x[-c(1:11),])
 head(dealer_price_list[[1]], n = 20)</code></pre>
 <pre><code>##    Contents..Weekly.Dry.Bean.Prices..by.Class..and.Annual.Summary Col2
 ## 12                                                              1    6
@@ -166,7 +167,7 @@ head(dealer_price_list[[1]], n = 20)</code></pre>
 <p>Ok, now it gets gnarly.<br />
 Here is the problem - not all data frames have the same variables, and it looks like variable names are hidden somewhere down in each dataframe.<br />
 I ended up going through each data frame manually - obviously this doesn’t scale super well - and is laborious, but I couldn’t come up with a clever way to automate this, but here is an example of the type of code I used:</p>
-<pre class="r"><code># 1981
+<pre class="r"><code>#1981
 glimpse(dealer_price_list[[1]])</code></pre>
 <pre><code>## Observations: 80
 ## Variables: 14
@@ -428,10 +429,9 @@ glimpse(dealer_price_list[[1]])</code></pre>
 ## 89        =                  =      =        =  &lt;NA&gt;
 ## 90     &lt;NA&gt;               &lt;NA&gt;   &lt;NA&gt;     &lt;NA&gt;  &lt;NA&gt;
 ## 91     &lt;NA&gt;               &lt;NA&gt;   &lt;NA&gt;     &lt;NA&gt;  &lt;NA&gt;</code></pre>
-<pre class="r"><code>dealer_price_list[[1]] = dealer_price_list[[1]][-c(64:100), -14]
-colnames(dealer_price_list[[1]]) = c(&quot;Month&quot;, &quot;Day&quot;, &quot;Pinto&quot;, &quot;Grt_Northern&quot;, 
-    &quot;Pink&quot;, &quot;Sm_Red&quot;, &quot;Navy&quot;, &quot;B_Lima&quot;, &quot;L_Lima&quot;, &quot;Blackeye&quot;, &quot;Small_White&quot;, 
-    &quot;Kidney&quot;, &quot;Garbanzo&quot;)
+<pre class="r"><code>dealer_price_list[[1]] = dealer_price_list[[1]][-c(64:100),-14]
+colnames(dealer_price_list[[1]]) = c(&quot;Month&quot;, &quot;Day&quot;, &quot;Pinto&quot;, &quot;Grt_Northern&quot;, &quot;Pink&quot;, &quot;Sm_Red&quot;, &quot;Navy&quot;, &quot;B_Lima&quot;, &quot;L_Lima&quot;, &quot;Blackeye&quot;,
+                                     &quot;Small_White&quot;, &quot;Kidney&quot;, &quot;Garbanzo&quot;)
 glimpse(dealer_price_list[[1]])</code></pre>
 <pre><code>## Observations: 63
 ## Variables: 13
@@ -459,8 +459,6 @@ glimpse(dealer_price_list[[1]])</code></pre>
 ##   Price = col_double()
 ## )</code></pre>
 <pre class="r"><code>dealer_price_long </code></pre>
-<pre><code>## Warning in format.POSIXlt(as.POSIXlt(x), ...): unknown timezone &#39;zone/tz/
-## 2018c.1.0/zoneinfo/America/Phoenix&#39;</code></pre>
 <pre><code>## # A tibble: 23,984 x 3
 ##    date       Class Price
 ##    &lt;date&gt;     &lt;chr&gt; &lt;dbl&gt;
