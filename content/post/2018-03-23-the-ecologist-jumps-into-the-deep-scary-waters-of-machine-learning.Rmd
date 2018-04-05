@@ -9,6 +9,8 @@ categories:
   - machine learning
 tags:
   - science
+summary: >
+  An overview of my experience jumping into Machine Learning. The mind-switch from explanation to prediction, and a basic overview of my understanding of what Machine Learning is (and isn't).
 ---
 
 ## Misconceptions

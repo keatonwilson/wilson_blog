@@ -11,6 +11,8 @@ tags:
   - beans
   - markets
   - prediction
+summary: >
+  Here, we take the next step in bean market prediction with machine learning project. I go through the steps I use to preprocess and split the data into training and test sets using the R package caret. 
 ---
 
 ## The gist
