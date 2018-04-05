@@ -19,7 +19,7 @@ title = "Keaton Wilson"
 theme = "hugo-tranquilpeak-theme"
 disqusShortname = "keatonwilson.github.io"
 publishDir = "/Users/KeatonWilson/Documents/Projects/keatonwilson.github.io"
-googleAnalytics = "UA-116951285-1"
+googleAnalytics = "UA-116941718-1"
 paginate = 7
 canonifyurls = true
 
