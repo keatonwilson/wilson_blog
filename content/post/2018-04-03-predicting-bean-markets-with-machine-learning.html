@@ -74,8 +74,8 @@ The first is that we want to generate future data - so that for a given date, we
 <p>Why 6 months in the future, you might ask? Well, the time interval can be changed to anything we want, but this represents a typical turn-around time for brokers in the market. You’ll see in the code below that it’s fairly easy to build models that would predict for different time periods into the future.</p>
 <p>Why average monthly price? Some of our data down the line (and on some pieces of this project that I’m working on now) only give us data on monthly-scales, not the nice weekly scales present in this data. Yes, it’s a bit a bigger temporal grain-size, but, as I’ll show you, the models still do an excellent job.</p>
 <p>If you look at the data summary above, you can see that future_date and future_weekly_avg_price are already in this data frame… here is how to generate the future date using the absolutely fantastic <a href="http://lubridate.tidyverse.org">lubridate package</a>.</p>
-<pre class="r"><code>bean_master_import$future_date = bean_master$date + months(6)
-bean_master_import$week = week(bean_master$date)</code></pre>
+<pre class="r"><code>bean_master_import$future_date = bean_master_import$date + months(6)
+bean_master_import$week = week(bean_master_import$date)</code></pre>
 <p>Next, we add the future month and year, and calculate monthly average prices. In the first step, I’m adding the month and year to the original dataframe, and in the second, I’m making a new dataframe that we’re going to join back to the first to get our future average monthly prices associated with dates.</p>
 <pre class="r"><code>#Adding future month and year
 bean_master_import = bean_master_import %&gt;%

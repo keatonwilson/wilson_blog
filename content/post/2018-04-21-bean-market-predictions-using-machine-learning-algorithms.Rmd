@@ -1,0 +1,191 @@
+---
+title: Bean Market Predictions using Machine Learning Algorithms
+author: ''
+date: '2018-04-21'
+slug: bean-market-predictions-using-machine-learning-algorithms
+categories:
+  - bean project
+  - data science
+  - machine learning
+tags:
+  - beans
+---
+
+### Goals
+
+As I've discussed in earlier posts, the basic premise of this project was to use a nice (but messy) dataset from the USDA on domestic bean markets to explore a variety of different avenues of analysis, visualization and data exploration. One of the main goals of this project was to see if I could build some machine learning models that do a good job of predicting future prices of different classes of beans. 
+
+In past posts we've worked to [import messy data from Excel files](keatonwilson.github.io/2018/03/bean-munging-and-excel-wrangling/), and [preprocessing data using the caret package](keatonwilson.github.io/2018/04/preprocessing-bean-data-on-the-road-to-machine-learning/) to make sure it's ready for running some building, testing and tuning some machine learning algorithms.
+
+We're going to start with the preprocessed data set outlined in my last post. Let's give it a lookover to remind ourselves what's in it (and load up our packages)
+
+``` {r, echo = FALSE, message = FALSE, results = "hide", warning = FALSE}
+#Loading in everything that we need to get to the preprocessing
+#reading in the bean_master file
+
+library(tidyverse)
+library(caret)
+library(lubridate)
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+#Adding future month and year
+bean_master_import = bean_master_import %>%
+  mutate(future_month = month(future_date, label = TRUE, abbr = FALSE),
+         future_year = year(future_date)) 
+
+#Making the dataframe we're going to join
+bean_master_future_to_join = bean_master_import %>%
+  group_by(class, year, month) %>%
+  summarize(monthly_average_price = mean(price))
+
+#joining it back on, but with the key column set to future date instead of date
+bean_master_import = bean_master_import %>%
+  inner_join(bean_master_future_to_join, by = c("future_year" = "year", "future_month" = "month", "class" = "class")) %>%
+  rename(future_monthly_average_price = monthly_average_price) 
+
+#Looks reasonable
+head(bean_master_import$future_monthly_average_price, n = 20)
+
+#This looks reasonable too
+select(bean_master_import, future_monthly_average_price, price)
+
+#Cleaning up the dataframe a bit
+bean_master_import = bean_master_import %>%
+  select(-future_date, -future_weekly_avg_price, -year) %>%
+  mutate(day = day(date))
+
+bean_master_import$future_month = factor(bean_master_import$future_month)
+bean_master_import$day = factor(bean_master_import$day)
+bean_master_import$class = factor(bean_master_import$class)
+
+bean_master_import$imports = as.numeric(bean_master_import$imports)
+
+#Setting seed for reproducibility
+set.seed(42)
+
+#First, let's cut it down to the explanatory variables we want
+bean_master_import_slim = bean_master_import %>%
+  select(date, class, price, whole_market_avg, whole_market_sum, 
+         class_market_share, planted, harvested, yield, production,
+         month, imports)
+
+#Preprocessing
+preProc2 = preProcess(bean_master_import_slim, method = c("center", "scale", "knnImpute", "zv"))
+preProc2
+
+#Doing the preprocessing
+bean_ML_import_pp = predict(preProc2, bean_master_import_slim)
+
+#glimpsing results
+glimpse(bean_ML_import_pp)
+bean_ML_import_pp$month = factor(bean_ML_import_pp$month)
+
+#binding the response and dates variable back on
+bean_ML_import_pp$future_monthly_avg_price = bean_master_import$future_monthly_average_price
+
+#Training and test sets
+index1 = createDataPartition(bean_ML_import_pp$future_monthly_avg_price, p = 0.80, list = FALSE)
+bean_ML_import_train = bean_ML_import_pp[index1,]
+bean_ML_import_test = bean_ML_import_pp[-index1,]
+```
+
+
+``` {r}
+library(tidyverse)
+library(caret)
+
+glimpse(bean_ML_import_train)
+glimpse(bean_ML_import_test)
+```
+
+So these dataframes look great - remember that the values look a little wonky because we've centered and scaled them, and that the overall goal is to predict future monthly average price given everything else. We can also look at the dimensions of the data frames (6101 rows in our training set and 1524 rows in our test set) - these make sense too, based on our previous training and test splits. 
+
+Our basic ML pipeline is this:
+
+**Preprocess** > **Split** > **Model Building** > **Model Testing** > **Model Tuning** 
+
+Let's jump into some algorithms.  
+It's worth talking a little bit about algorithm choice. In general, there are two big categories of predictive algorithms. First, there are those that predict classes (putting observations into categories based on other variables - think of things like tumor identification, identifying customers who might unsubscribe to a service (churn), or determining if a certain wine variety belongs in one cluster over another).  
+
+The second are algorithms that output continuous, numeric values given a set of input variables (things like average customer rating of a book, the price of cryptocurrencies or, in our case the price of a hundred-weight of beans). I'll cover classifcation algorithms in another post, and will focus on a variety of continuous predictors here. A brief aside here - we'll also be focusing exclusively on supervised learning - unsupervised learning typically adresses a differnt set of questions (taking unlabeled data and finding patterns or classifcations within the data set) - here, we have a different goal - generate good predictive models.  
+
+There are a bazillion different algorithms, which can be a bit daunting at first, but we'll explore a few of the basics here:  
+1. Linear Regression  
+2. Classification and Regression Tree (CART)  
+3. Artificial Neural Net (ANN)  
+4. Random Forest  
+
+All of these algorithms have pros and cons. For example, linear regressions provide fairly interpretable mechanics (that is, we can see what the model is doing to extract what variables are the most important and how they're interacting), whereas neural net's are great at predicting really complex phenomena, but are computationally expensive (you'll see below that they can take a long time to run), and are black boxes (i.e. it's hard for humans to interpret what's happening inside them).  
+
+## Linear Regression  
+Let's start with the old standby of analysis - the linear regression. If you want a refresher on how this works, check out [this](www.wikipedia.org/wiki/Linear_regression). In its simplest form, regression models predict variability in one continuous variable based on another, generating a line that best predicts this relationship. This get's a little more complicated when the model incorporates information on many different variables, and interactions between those variables, but... that's not what this post is about. 
+
+In all of the examples, we'll be implementing the caret package to run the models.  
+
+The first step is to setup an object that will allow us to control parameters across all the m
+
+``` {r} 
+library(caret)
+
+#setting seed for reproducibility:
+set.seed(42)
+fitControl = trainControl(method = "repeatedcv", number = 5, repeats = 5)
+
+```
+
+The `trainControl` function here lets us build this object. If you check out the help page for the function, you can see there are **LOTS** of arguments - you have a lot of control over what happens in your models. Here, we're specifying that we're going to use repeated cross validation (check out [this](keatonwilson.github.io/2018/03/the-ecologist-jumps-into-the-deep-scary-waters-of-machine-learning/)), with 5 repeats and 5 folds (this is fairly robust, and we might have reduce it later on for the ANN). Because these are example models, I'm using a smaller number of repeats and folds, which can help us do quicker model assement before diving in deeper to tune models. 
+
+Now we can run our model:  
+
+A warning - this takes a while, mostly because we're doing a lot of model comparisons. The `train` function is splitting the training data into 10 different training and test sets 10 different times, *AND* also using the grid argument in `trainControl` to modifying different model parameters of the linear regression to tune the model simulatenously. 
+``` {r}
+#And just a standard linear model
+lmfit1 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+               method = "lm",
+               trControl = fitControl)
+```
+
+Next, we can inspect our model, and also examine how well it did on in-sample data. 
+
+```{r}
+lmfit1
+```
+
+Not bad! You can see from the output that we have an RMSE (Root-Mean Squared Error) of 5.4, which means that on average, the model predicts bean price within $5.4 per hundred-weight, and an R-squared of 0.559 The model is only explaining around 56% of the variance in price. Remember, this is only an estimate on in-sample data using k-fold cross validation - the actual effectivness of the model might be different on test data. 
+
+Also, the MAE parapmeter stands for Mean Absolute Error, and is another parameter we can asseess our model's fit with - also in the same units as the dependent variable (just like RMSE). A nice comparison of RMSE and MAE can be found [here](https://medium.com/human-in-a-machine-world/mae-and-rmse-which-metric-is-better-e60ac3bde13d).
+
+We could try and tune the model, and run it on out-of-sample test data, but let's move on to some more models. 
+
+## Classification and Regression Tree Models
+
+CART stands for Classification and Regression Tree. These models are a type of decision tree model, an overview of which can be found [here](https://machinelearningmastery.com/classification-and-regression-trees-for-machine-learning/) if you're interested in the machinery under the hood.  
+
+```{r}
+cartfit1 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+                 method = "rpart",
+                 trControl = fitControl)
+cartfit1
+
+```
+
+So this model is worse than the old-fashioned linear regression! The best model here generates an RMSE of 6.00 and an R-squared of 0.45 - the model is predicting 45% of the variance in market prices 6 months ahead of time - not bad! 
+
+Let's try running the model on our out-of-sample test set. 
+
+We use two functions to do this - first the predict function, which we feed our model and the test-data set. This will use the model to build some predictions of price 6 months ahead of time which we can then compare to the actual prices in thes test set.  
+
+We can do this comparison with the `postResample` function from caret, which compares the mean-squared error and R-squared for our predicted values and the actual values of the test set. 
+
+```{r}
+p_cartfit1 = predict(cartfit1, bean_ML_import_test)
+
+postResample(pred = p_cartfit1, obs = bean_ML_import_test$future_monthly_avg_price)
+```
+
+So, pretty close to the measures of model performance obtained with 5-fold cross validation, though a bit worse. Overall, we're improving though. 
+
+We could go back and tune the CART model, by changing the tuneLength argument in the train function, but let's do this on a later model - we're starting to get to the good stuff!
+
+## Artificial Neural Net
+
+

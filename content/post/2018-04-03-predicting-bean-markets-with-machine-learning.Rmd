@@ -57,8 +57,8 @@ Why average monthly price? Some of our data down the line (and on some pieces of
 If you look at the data summary above, you can see that future_date and future_weekly_avg_price are already in this data frame... here is how to generate the future date using the absolutely fantastic [lubridate package](http://lubridate.tidyverse.org). 
 
 ``` {r eval=FALSE} 
-bean_master_import$future_date = bean_master$date + months(6)
-bean_master_import$week = week(bean_master$date)
+bean_master_import$future_date = bean_master_import$date + months(6)
+bean_master_import$week = week(bean_master_import$date)
 ```
 
 Next, we add the future month and year, and calculate monthly average prices. In the first step, I'm adding the month and year to the original dataframe, and in the second, I'm making a new dataframe that we're going to join back to the first to get our future average monthly prices associated with dates.
