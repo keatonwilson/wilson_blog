@@ -64,7 +64,7 @@ It’s worth talking a little bit about algorithm choice. In general, there are 
 2. Classification and Regression Tree (CART)<br />
 3. Artificial Neural Net (ANN)<br />
 4. Random Forest</p>
-<p>All of these algorithms have pros and cons. For example, linear regressions provide fairly interpretable mechanics (that is, we can see what the model is doing to extract what variables are the most important and how they’re interacting), whereas neural net’s are great at predicting really complex phenomena, but are computationally expensive (you’ll see below that they can take a long time to run), and are black boxes (i.e. it’s hard for humans to interpret what’s happening inside them).</p>
+<p>All of these algorithms have pros and cons. For example, linear regressions provide fairly interpretable mechanics (that is, we can see what the model is doing to extract what variables are the most important and how they’re interacting), whereas neural netss are great at predicting really complex phenomena, but are computationally expensive (you’ll see below that they can take a long time to run), and are black boxes (i.e. it’s hard for humans to interpret what’s happening inside them).</p>
 </div>
 <div id="linear-regression" class="section level2">
 <h2>Linear Regression</h2>
@@ -143,4 +143,157 @@ postResample(pred = p_cartfit1, obs = bean_ML_import_test$future_monthly_avg_pri
 </div>
 <div id="artificial-neural-net" class="section level2">
 <h2>Artificial Neural Net</h2>
+<p>Neural nets were designed to mimic how our brains and biological communication systems function. They’re made up of a collection of units or nodes and can transmit information to each other. Deep neural nets that allow information to travel all around the network are en vogue right now, but are computationally expensive - here, we’ll used a paired down version, again with the caret package.</p>
+<pre class="r"><code>nnfit2 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+               method = &quot;nnet&quot;,
+               trControl = fitControl,
+               maxit = 100,
+               linout = 1, 
+               verbose = FALSE)</code></pre>
+<pre><code>## Warning in nominalTrainWorkflow(x = x, y = y, wts = weights, info =
+## trainInfo, : There were missing values in resampled performance measures.</code></pre>
+<p>Here, we specify the linout argumnet as TRUE in the train function - this lets the function know that we’re interested in a linear output - otherwise a sigmoidal activation function is used, and all the predictions will be constrained between 0 and 1.</p>
+<pre class="r"><code>nnfit2</code></pre>
+<pre><code>## Neural Network 
+## 
+## 6101 samples
+##   12 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold, repeated 5 times) 
+## Summary of sample sizes: 4880, 4880, 4881, 4881, 4882, 4880, ... 
+## Resampling results across tuning parameters:
+## 
+##   size  decay  RMSE      Rsquared   MAE     
+##   1     0e+00  8.080127        NaN  6.501369
+##   1     1e-04  8.080127        NaN  6.501369
+##   1     1e-01  7.881306  0.1241743  6.330698
+##   3     0e+00  8.080127        NaN  6.501369
+##   3     1e-04  8.080127        NaN  6.501369
+##   3     1e-01  7.449453  0.4798837  5.950023
+##   5     0e+00  8.080127        NaN  6.501369
+##   5     1e-04  8.080127        NaN  6.501369
+##   5     1e-01  7.255844  0.4153007  5.773972
+## 
+## RMSE was used to select the optimal model using the smallest value.
+## The final values used for the model were size = 5 and decay = 0.1.</code></pre>
+<pre class="r"><code>p_nnetfit2 = predict(nnfit2, bean_ML_import_test)
+
+postResample(pred = p_nnetfit2, obs = bean_ML_import_test$future_monthly_avg_price)</code></pre>
+<pre><code>##      RMSE  Rsquared       MAE 
+## 5.2056459 0.5697035 4.0592629</code></pre>
+<p>Here, the best model in our tuning grid was one with an RMSE of $7.71/hundredweight of beans in in-sample data, which resulted in an RMSE of 7.9 on out-of-sample test data. Unfortunately, we can’t extract R^2s from these data (a finciky bit of the nnet function, which I can’t find an answer to!). Regardless, not much better than our linear regression. Let’s move on.</p>
+</div>
+<div id="random-forest" class="section level2">
+<h2>Random Forest</h2>
+<p>Random forests algorithms are a type of ensemble learning method - the idea is to construct a ton of different decision trees, and outputting the mean prediction of all of the individual trees. Here, we use the caret pacakge again, with the ranger function.</p>
+<p>This is going to take a while if you run it yourself…</p>
+<pre class="r"><code>rffit1 =  train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+                        method = &quot;ranger&quot;,
+                        trControl = fitControl)
+
+rffit1</code></pre>
+<pre><code>## Random Forest 
+## 
+## 6101 samples
+##   12 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold, repeated 5 times) 
+## Summary of sample sizes: 4882, 4881, 4882, 4879, 4880, 4881, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  splitrule   RMSE      Rsquared   MAE      
+##    2    variance    3.469872  0.8684889  2.7045488
+##    2    extratrees  4.922189  0.7763186  3.9290863
+##   16    variance    1.465102  0.9685482  0.8722360
+##   16    extratrees  1.512769  0.9683322  0.9566884
+##   30    variance    1.506020  0.9661231  0.8499988
+##   30    extratrees  1.469716  0.9695850  0.9027341
+## 
+## Tuning parameter &#39;min.node.size&#39; was held constant at a value of 5
+## RMSE was used to select the optimal model using the smallest value.
+## The final values used for the model were mtry = 16, splitrule =
+##  variance and min.node.size = 5.</code></pre>
+<p>Woooooooo man! Look at those scores! The best model has an R^2 of 0.97, and an RMSE of 1.515! This is by far the best model we’ve tested so far. It’s explaining 97% of the variance in future average monthly price!</p>
+<p>Let’s see how it does on out-of-sample data.</p>
+<pre class="r"><code>p_rffit2 = predict(rffit1, bean_ML_import_test)
+
+postResample(pred = p_rffit2, obs = bean_ML_import_test$future_monthly_avg_price)</code></pre>
+<pre><code>##      RMSE  Rsquared       MAE 
+## 1.2342623 0.9765519 0.7254784</code></pre>
+<p>Fantastic - the model appears to have similar performance on the test data! Let’s see if we can tune the model a bit more to get a bit more predictive power.</p>
+<pre class="r"><code>rffit2 =  train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+                        method = &quot;ranger&quot;,
+                        trControl = fitControl, 
+                        tuneLength = 5)
+
+rffit2</code></pre>
+<pre><code>## Random Forest 
+## 
+## 6101 samples
+##   12 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (5 fold, repeated 5 times) 
+## Summary of sample sizes: 4881, 4881, 4881, 4880, 4881, 4880, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  splitrule   RMSE      Rsquared   MAE      
+##    2    variance    3.484480  0.8672428  2.7130311
+##    2    extratrees  4.912424  0.7758483  3.9211817
+##    9    variance    1.563117  0.9647930  0.9655579
+##    9    extratrees  1.633444  0.9638930  1.0733833
+##   16    variance    1.461370  0.9687225  0.8721647
+##   16    extratrees  1.516951  0.9680933  0.9593576
+##   23    variance    1.448004  0.9689824  0.8435539
+##   23    extratrees  1.479318  0.9693886  0.9200007
+##   30    variance    1.490552  0.9668369  0.8483187
+##   30    extratrees  1.471178  0.9695186  0.9023834
+## 
+## Tuning parameter &#39;min.node.size&#39; was held constant at a value of 5
+## RMSE was used to select the optimal model using the smallest value.
+## The final values used for the model were mtry = 23, splitrule =
+##  variance and min.node.size = 5.</code></pre>
+<p>This model took some time to run and tune, and we’ve improved the in-sample prediction slightly. Let’s test it out on the test data.</p>
+<pre class="r"><code>p_rffit3 = predict(rffit2, bean_ML_import_test)
+
+postResample(pred = p_rffit3, obs = bean_ML_import_test$future_monthly_avg_price)</code></pre>
+<pre><code>##      RMSE  Rsquared       MAE 
+## 1.2236033 0.9767012 0.6869148</code></pre>
+<p>This results in significant improvements - with better RMSE, Rsquared and MAE values compared to the un-tuned model.</p>
+<p>Finally, let’s take a look at how to visualize how well our model does.</p>
+<pre class="r"><code>#binding the predictions onto the test set
+bean_ML_import_test$pred = predict(rffit1, newdata = bean_ML_import_test)
+
+#generating a plot of actual prices versus predicted future prices
+ggplot(bean_ML_import_test, aes(x = pred, y = future_monthly_avg_price, color = class)) +
+  geom_point() +
+  theme_classic() +
+  geom_abline(slope = 1, intercept = 1) +
+  xlab(&quot;Predicted Future Price&quot;) +
+  ylab(&quot;Actual Future Price &quot;)</code></pre>
+<p><img src="/post/2018-04-21-bean-market-predictions-using-machine-learning-algorithms_files/figure-html/unnamed-chunk-14-1.png" width="672" />
+The black diagonal line represents the 1:1 line, dots on this line are when our model is doing a perfect job of predicting. Points above this line are scenarios where our model under-predicted price, and dots below are when the model over-predicted price. One interesting trend is that you can see that though most dots are <strong>really</strong> close to the line, many are just below, indicating that our model consistently slightly over-predicts price - something to keep in mind if this was going to be used for by investors.</p>
+<pre class="r"><code>#We can also plot this over time for each variety
+bean_ML_import_test$date = as.Date(bean_ML_import_test$date)
+bean_ML_import_test %&gt;%
+  gather(key = valuetype, value = future_price, pred, future_monthly_avg_price) %&gt;%
+ggplot(aes(x = date, y = future_price, color = class, lty = factor(valuetype))) +
+         geom_path() +
+        theme_classic() +
+  facet_wrap( ~ class) +
+  ylab(&quot;Future Price ($)&quot;) +
+  xlab(&quot;Date&quot;) +
+  scale_linetype_discrete(name = &quot;&quot;,
+                          labels = c(&quot;Actual Future Price&quot;, &quot;Predicted Future Price&quot;)) +
+  scale_color_discrete(name = &quot;Variety&quot;)</code></pre>
+<p><img src="/post/2018-04-21-bean-market-predictions-using-machine-learning-algorithms_files/figure-html/unnamed-chunk-15-1.png" width="672" />
+Overall this figure matches the first figure - our model is doing a great job over time at prediction.</p>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>Overall, this post outlines one of the main goals I was working towards on this project - to develop a machine learning model that does a good job of predicting future bean prices based on current information. The best model here does a pretty amazing job at this - predicting the average monthly price six months into the future within $1.20/hundredweight across all classes. You can imagine how useful this type of predictive model might be for individuals or businsses interested in speculating on the market.</p>
+<p>In the next few posts, we’ll look at some other interesting data from this project - and I’ll introduce a basic investing/portfolio model I’ve built on the Machine Learning model outlined here to demonstrate how much money someone could make if they had used this model to trade beans during this period. Pretty interesting stuff!</p>
+<p>Cheers!</p>
 </div>

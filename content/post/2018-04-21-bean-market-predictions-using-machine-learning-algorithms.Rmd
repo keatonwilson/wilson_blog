@@ -114,7 +114,7 @@ There are a bazillion different algorithms, which can be a bit daunting at first
 3. Artificial Neural Net (ANN)  
 4. Random Forest  
 
-All of these algorithms have pros and cons. For example, linear regressions provide fairly interpretable mechanics (that is, we can see what the model is doing to extract what variables are the most important and how they're interacting), whereas neural net's are great at predicting really complex phenomena, but are computationally expensive (you'll see below that they can take a long time to run), and are black boxes (i.e. it's hard for humans to interpret what's happening inside them).  
+All of these algorithms have pros and cons. For example, linear regressions provide fairly interpretable mechanics (that is, we can see what the model is doing to extract what variables are the most important and how they're interacting), whereas neural netss are great at predicting really complex phenomena, but are computationally expensive (you'll see below that they can take a long time to run), and are black boxes (i.e. it's hard for humans to interpret what's happening inside them).  
 
 ## Linear Regression  
 Let's start with the old standby of analysis - the linear regression. If you want a refresher on how this works, check out [this](www.wikipedia.org/wiki/Linear_regression). In its simplest form, regression models predict variability in one continuous variable based on another, generating a line that best predicts this relationship. This get's a little more complicated when the model incorporates information on many different variables, and interactions between those variables, but... that's not what this post is about. 
@@ -137,7 +137,7 @@ The `trainControl` function here lets us build this object. If you check out the
 Now we can run our model:  
 
 A warning - this takes a while, mostly because we're doing a lot of model comparisons. The `train` function is splitting the training data into 10 different training and test sets 10 different times, *AND* also using the grid argument in `trainControl` to modifying different model parameters of the linear regression to tune the model simulatenously. 
-``` {r}
+``` {r, cache = TRUE}
 #And just a standard linear model
 lmfit1 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
                method = "lm",
@@ -160,7 +160,7 @@ We could try and tune the model, and run it on out-of-sample test data, but let'
 
 CART stands for Classification and Regression Tree. These models are a type of decision tree model, an overview of which can be found [here](https://machinelearningmastery.com/classification-and-regression-trees-for-machine-learning/) if you're interested in the machinery under the hood.  
 
-```{r}
+```{r, cache = TRUE}
 cartfit1 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
                  method = "rpart",
                  trControl = fitControl)
@@ -188,4 +188,112 @@ We could go back and tune the CART model, by changing the tuneLength argument in
 
 ## Artificial Neural Net
 
+Neural nets were designed to mimic how our brains and biological communication systems function. They're made up of a collection of units or nodes and can transmit information to each other. Deep neural nets that allow information to travel all around the network are en vogue right now, but are computationally expensive - here, we'll used a paired down version, again with the caret package. 
 
+``` {r, cache = TRUE, results = "hide"}
+nnfit2 = train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+               method = "nnet",
+               trControl = fitControl,
+               maxit = 100,
+               linout = 1, 
+               verbose = FALSE)
+```
+Here, we specify the linout argumnet as TRUE in the train function - this lets the function know that we're interested in a linear output - otherwise a sigmoidal activation function is used, and all the predictions will be constrained between 0 and 1. 
+
+```{r}
+nnfit2
+p_nnetfit2 = predict(nnfit2, bean_ML_import_test)
+
+postResample(pred = p_nnetfit2, obs = bean_ML_import_test$future_monthly_avg_price)
+```
+
+Here, the best model in our tuning grid was one with an RMSE of $7.71/hundredweight of beans in in-sample data, which resulted in an RMSE of 7.9 on out-of-sample test data. Unfortunately, we can't extract R^2s from these data (a finciky bit of the nnet function, which I can't find an answer to!). Regardless, not much better than our linear regression. Let's move on.
+
+## Random Forest
+
+Random forests algorithms are a type of ensemble learning method - the idea is to construct a ton of different decision trees, and outputting the mean prediction of all of the individual trees. Here, we use the caret pacakge again, with the ranger function. 
+
+This is going to take a while if you run it yourself...
+
+```{r, cache = TRUE}
+rffit1 =  train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+                        method = "ranger",
+                        trControl = fitControl)
+
+rffit1
+```
+
+Woooooooo man! Look at those scores! The best model has an R^2 of 0.97, and an RMSE of 1.515! This is by far the best model we've tested so far. It's explaining 97% of the variance in future average monthly price!  
+
+Let's see how it does on out-of-sample data.
+
+```{r}
+p_rffit2 = predict(rffit1, bean_ML_import_test)
+
+postResample(pred = p_rffit2, obs = bean_ML_import_test$future_monthly_avg_price)
+```
+
+Fantastic - the model appears to have similar performance on the test data! Let's see if we can tune the model a bit more to get a bit more predictive power. 
+
+```{r, cache = TRUE}
+rffit2 =  train(future_monthly_avg_price ~ ., data = bean_ML_import_train,
+                        method = "ranger",
+                        trControl = fitControl, 
+                        tuneLength = 5)
+
+rffit2
+```
+
+This model took some time to run and tune, and we've improved the in-sample prediction slightly. Let's test it out on the test data. 
+
+```{r}
+p_rffit3 = predict(rffit2, bean_ML_import_test)
+
+postResample(pred = p_rffit3, obs = bean_ML_import_test$future_monthly_avg_price)
+```
+
+This results in significant improvements - with better RMSE, Rsquared and MAE values compared to the un-tuned model. 
+
+Finally, let's take a look at how to visualize how well our model does. 
+
+```{r, cache = TRUE}
+#binding the predictions onto the test set
+bean_ML_import_test$pred = predict(rffit1, newdata = bean_ML_import_test)
+
+#generating a plot of actual prices versus predicted future prices
+ggplot(bean_ML_import_test, aes(x = pred, y = future_monthly_avg_price, color = class)) +
+  geom_point() +
+  theme_classic() +
+  geom_abline(slope = 1, intercept = 1) +
+  xlab("Predicted Future Price") +
+  ylab("Actual Future Price ")
+
+```
+The black diagonal line represents the 1:1 line, dots on this line are when our model is doing a perfect job of predicting. Points above this line are scenarios where our model under-predicted price, and dots below are when the model over-predicted price. One interesting trend is that you can see that though most dots are **really** close to the line, many are just below, indicating that our model consistently slightly over-predicts price - something to keep in mind if this was going to be used for by investors. 
+
+
+```{r}
+#We can also plot this over time for each variety
+bean_ML_import_test$date = as.Date(bean_ML_import_test$date)
+bean_ML_import_test %>%
+  gather(key = valuetype, value = future_price, pred, future_monthly_avg_price) %>%
+ggplot(aes(x = date, y = future_price, color = class, lty = factor(valuetype))) +
+         geom_path() +
+        theme_classic() +
+  facet_wrap( ~ class) +
+  ylab("Future Price ($)") +
+  xlab("Date") +
+  scale_linetype_discrete(name = "",
+                          labels = c("Actual Future Price", "Predicted Future Price")) +
+  scale_color_discrete(name = "Variety")
+```
+Overall this figure matches the first figure - our model is doing a great job over time at prediction. 
+
+
+## Conclusions
+
+Overall, this post outlines one of the main goals I was working towards on this project - to develop a machine learning model that does a good job of predicting future bean prices based on current information. The best model here does a pretty amazing job at this - predicting the average monthly price six months into the future within $1.20/hundredweight across all classes. You can imagine how useful this type of predictive model might be for individuals or businsses interested in speculating on the market.  
+
+In the next few posts, we'll look at some other interesting data from this project - and I'll introduce a basic investing/portfolio model I've built on the Machine Learning model outlined here to demonstrate how much money someone could make if they had used this model to trade beans during this period. Pretty interesting stuff!
+
+Cheers!
