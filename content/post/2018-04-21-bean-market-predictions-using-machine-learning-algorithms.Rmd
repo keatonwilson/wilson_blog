@@ -8,7 +8,9 @@ categories:
   - data science
   - machine learning
 tags:
-  - beans
+  - beans  
+summary: >
+  Finally, we get to some machine learning models. I go over using the functions in the caret package to build, test and tune a variety of models, and end up with a nice Random Forest model that does a very solid job predicting bean market prices 6 months in the future. We finish up with a little bit of data viz to assess our prediction power. 
 ---
 
 ### Goals
