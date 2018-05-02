@@ -171,6 +171,6 @@ A few interesting patterns to note:
 2. Some varietals are very tightly correlated (i.e. Navy Beans and Black Beans, Dark Red Kidneys and Black Beans and Pinks and Pintos). I don't have a good explanation for why this is - it would take some deeper insider knowledge of how the markets operate.  
 
 ## Conclusions  
-Overall, I hope this post demonstrated some of the interesting types of analysis that can be done on rich data sets like this. We performend basically no statistics on these data, but from some visualizations and summarizing functions, we can gain some interesting insights into historical trends in the market, and come up with some ideas about the type of forces driving these patterns.  
+Overall, I hope this post demonstrated some of the interesting types of analysis that can be done on rich data sets like this. We performed basically no statistics on these data, but from some visualizations and summarizing functions, we can gain some interesting insights into historical trends in the market, and come up with some ideas about the type of forces driving these patterns.  
 
 Cheers!
