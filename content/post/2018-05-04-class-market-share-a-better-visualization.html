@@ -1,0 +1,61 @@
+---
+title: Class Market Share - A better visualization
+author: ''
+date: '2018-05-04'
+slug: class-market-share-a-better-visualization
+categories:
+  - bean project
+tags:
+  - visualization
+  - beans  
+summary: >
+  A short post detailing a nice visualization suggested by a reader!
+---
+
+
+
+<div id="better-viz" class="section level2">
+<h2>Better viz</h2>
+<p><a href="https://www.swac.umn.edu/sites/swac.umn.edu/files/cates_public_cv.pdf">Anna Cates</a>, a blog reader and soil ecologist working at the University of Wisconsin-Madison had a great suggestion for visualizing market-share change over time for different varietals - the stacked bar chart! I thought I’d write a brief post with some code!</p>
+<pre class="r"><code>#packages
+library(tidyverse)
+library(lubridate)
+
+
+#importing the master data set we&#39;ve been working with
+bean_master_import = read_csv(file = &quot;https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv&quot;)
+
+
+
+bean_master_import_bar = bean_master_import %&gt;%
+  mutate(month = month(date),
+         class = factor(class)) %&gt;%
+  group_by(year, month, class) %&gt;%
+  summarize(monthly_mean_market_share = mean(class_market_share)) 
+
+#Making a new column of just the beginning of each month, since we&#39;re binning by month
+beg_month_date = paste(bean_master_import_bar$year, bean_master_import_bar$month, rep(1, length(bean_master_import_bar$year)), sep = &quot;-&quot;)
+
+bean_master_import_bar$beg_month_date = ymd(beg_month_date)
+
+#Filtering to get rid of some of the noise
+bean_master_import_bar %&gt;%
+  filter(monthly_mean_market_share &lt; 0.25) %&gt;%
+
+ggplot( aes(x = beg_month_date, y = monthly_mean_market_share, fill = class)) +
+  geom_bar(stat = &quot;identity&quot;, position = &quot;fill&quot;, width = 200) +
+  theme_classic() +
+  ylab(&quot;Percentage Market Share&quot;) +
+  xlab(&quot;Date&quot;)</code></pre>
+<p><img src="/post/2018-05-04-class-market-share-a-better-visualization_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>Nice! This is a much more informative way to view the data - we can easily see trends over time more clearly than with the loess-smoothed trends in the previous post.</p>
+<p>A couple of notes:</p>
+<ol style="list-style-type: decimal">
+<li>We have some gaps in our data at 1992 - I’ll need to go back and look at the original data frame to see what is going on there.<br />
+</li>
+<li>I’ve manually set the width parameter here so there is some overlap in bars - this helps smooth out the graph - overall, trends are the same, and easier to read/visualize when there isn’t jitter or small white gaps.<br />
+</li>
+<li>One way around these issues might be to bin in larger time-chunks - perhaps every 3 months instead of every month - I didn’t do that here, but it would be a nice challenge!</li>
+</ol>
+<p>Enjoy!</p>
+</div>

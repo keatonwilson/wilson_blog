@@ -1,0 +1,59 @@
+---
+title: Class Market Share - A better visualization
+author: ''
+date: '2018-05-04'
+slug: class-market-share-a-better-visualization
+categories:
+  - bean project
+tags:
+  - visualization
+  - beans  
+summary: >
+  A short post detailing a nice visualization suggested by a reader!
+---
+
+## Better viz
+[Anna Cates](https://www.swac.umn.edu/sites/swac.umn.edu/files/cates_public_cv.pdf), a blog reader and soil ecologist working at the University of Wisconsin-Madison had a great suggestion for visualizing market-share change over time for different varietals - the stacked bar chart! I thought I'd write a brief post with some code!  
+
+```{r, message = FALSE, warning = FALSE}
+#packages
+library(tidyverse)
+library(lubridate)
+
+
+#importing the master data set we've been working with
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+
+
+
+bean_master_import_bar = bean_master_import %>%
+  mutate(month = month(date),
+         class = factor(class)) %>%
+  group_by(year, month, class) %>%
+  summarize(monthly_mean_market_share = mean(class_market_share)) 
+
+#Making a new column of just the beginning of each month, since we're binning by month
+beg_month_date = paste(bean_master_import_bar$year, bean_master_import_bar$month, rep(1, length(bean_master_import_bar$year)), sep = "-")
+
+bean_master_import_bar$beg_month_date = ymd(beg_month_date)
+
+#Filtering to get rid of some of the noise
+bean_master_import_bar %>%
+  filter(monthly_mean_market_share < 0.25) %>%
+
+ggplot( aes(x = beg_month_date, y = monthly_mean_market_share, fill = class)) +
+  geom_bar(stat = "identity", position = "fill", width = 200) +
+  theme_classic() +
+  ylab("Percentage Market Share") +
+  xlab("Date")
+```
+
+Nice! This is a much more informative way to view the data - we can easily see trends over time more clearly than with the loess-smoothed trends in the previous post. 
+
+A couple of notes:  
+
+1.  We have some gaps in our data at 1992 - I'll need to go back and look at the original data frame to see what is going on there.   
+2. I've manually set the width parameter here so there is some overlap in bars - this helps smooth out the graph - overall, trends are the same, and easier to read/visualize when there isn't jitter or small white gaps.  
+3. One way around these issues might be to bin in larger time-chunks - perhaps every 3 months instead of every month - I didn't do that here, but it would be a nice challenge!  
+
+Enjoy!
