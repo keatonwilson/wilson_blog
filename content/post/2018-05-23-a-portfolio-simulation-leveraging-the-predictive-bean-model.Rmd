@@ -11,7 +11,7 @@ tags:
   - markets
   - simulation  
 summary: >
-  Here, I show a demonstration of a simple investing/selling simulation based on historic bean data and the Random Forest model we built two posts ago. The basic premise is to see how much money we could make if we had had access to the predictive model int he 80s, and purchased beans based on it. 
+  Here, I show a demonstration of a simple investing/selling simulation based on historic bean data and the Random Forest model we built two posts ago. The basic premise is to see how much money we could make if we had had access to the predictive model in the 80s to 2011, and had purchased and sold beans based on the predictions it makes. 
 ---
 
 ## Hi there!  
@@ -19,7 +19,7 @@ It's been a while! Sorry for the delay on posting, but things have been a bit cr
 
 Enough of a preamble. Where were we? Oh right. Beans.  
 
-## What happens if we had our bean model to make investments in in real life?  
+## What happens if we had our bean model to make investments in real life?  
 
 This post comes out of discussion with friends and family after building the predictive bean model - what sort of real world application does this have? Sure, it seems like a reasonable financially beneficial thing to be able to predict markets with a high degree of accuracy, but what does that actually mean to someone interested in throwing some money at buying and selling dry beans?  
 
