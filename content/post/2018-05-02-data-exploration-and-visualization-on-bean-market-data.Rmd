@@ -26,7 +26,7 @@ library(tidyverse)
 
 
 #importing the master data set we've been working with
-bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv?token=AefUVJns3Rn5W9UiDzbkOhHnKJFGyqHNks5bq6oTwA%3D%3D")
 
 glimpse(bean_master_import)
 ```

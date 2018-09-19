@@ -25,7 +25,7 @@ library(tidyverse)
 
 
 #importing the master data set we&#39;ve been working with
-bean_master_import = read_csv(file = &quot;https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv&quot;)
+bean_master_import = read_csv(file = &quot;https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv?token=AefUVJns3Rn5W9UiDzbkOhHnKJFGyqHNks5bq6oTwA%3D%3D&quot;)
 
 glimpse(bean_master_import)</code></pre>
 <pre><code>## Observations: 8,407
@@ -98,7 +98,7 @@ ggplot(aes(x = date, y = price)) +
 ##  2 Dark_Red_Kidney               0.647 
 ##  3 Garbanzo                      0.567 
 ##  4 Blackeye                      0.534 
-##  5 Kidney                        0.500 
+##  5 Kidney                        0.5   
 ##  6 Black                         0.254 
 ##  7 Pink                          0.197 
 ##  8 Grt_Northern                  0.177 
@@ -134,7 +134,7 @@ ggplot(aes(x = date, y = class_market_share, color = factor(class))) +
   ylab(&quot;Percentage Market Share (%)&quot;) +
   scale_color_discrete(name = &quot;Class&quot;) +
   theme_classic()</code></pre>
-<pre><code>## `geom_smooth()` using method = &#39;gam&#39;</code></pre>
+<pre><code>## `geom_smooth()` using method = &#39;gam&#39; and formula &#39;y ~ s(x, bs = &quot;cs&quot;)&#39;</code></pre>
 <p><img src="/post/2018-05-02-data-exploration-and-visualization-on-bean-market-data_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>We can see that a lot has changed since the 80s. 2010 has varietals that more equally contribute to the market compared to historic valuees. Navy beans seem to be on the rise - with a steady increase in marketshare since 2000.</p>
 </div>

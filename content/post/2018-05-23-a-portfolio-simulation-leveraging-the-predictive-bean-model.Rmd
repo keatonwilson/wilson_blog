@@ -47,7 +47,7 @@ library(lubridate)
 library(scales)
 #reading in the bean_master file
 
-bean_master_import = read.csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+bean_master_import = read.csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv?token=AefUVEvB38PXHx8ExMoim-IlgrhsKthtks5bq7KuwA%3D%3D")
 
 #Let's cut down the data frame to only the important bits
 

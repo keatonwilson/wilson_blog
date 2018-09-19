@@ -28,7 +28,7 @@ We're going to start with the preprocessed data set outlined in my last post. Le
 library(tidyverse)
 library(caret)
 library(lubridate)
-bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv?token=AefUVJns3Rn5W9UiDzbkOhHnKJFGyqHNks5bq6oTwA%3D%3D")
 #Adding future month and year
 bean_master_import = bean_master_import %>%
   mutate(future_month = month(future_date, label = TRUE, abbr = FALSE),

@@ -38,7 +38,7 @@ library(lubridate)
 
 
 #Snagging the sort-of-cleaned data (remember last week's post) from github
-bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv")
+bean_master_import = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/bean_master_joined.csv?token=AefUVKlj3UobUpNDMJMDlZC9l72c2Gssks5bq6nCwA%3D%3D")
 
 #Lots of warning, but it works. Just ignore them - let's look at the data
 glimpse(bean_master_import)

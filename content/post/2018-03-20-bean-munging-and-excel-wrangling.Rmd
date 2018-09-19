@@ -34,6 +34,7 @@ First things first, let's load up some useful packages
 
 ```{r message = FALSE} 
 library(tidyverse) 
+library(rJava)
 library(readxl)
 library(XLConnect)
 ```
@@ -91,7 +92,7 @@ Let's skip ahead a bit - with a bit more munging and cleaning, we end up with a 
 
 Or alternatively:  
 ```{r}
-dealer_price_long = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv")
+dealer_price_long = read_csv(file = "https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv?token=AefUVKUxTssySEILhpmU2TOfE32UocJfks5bq6gMwA%3D%3D")
 dealer_price_long 
 ```
 

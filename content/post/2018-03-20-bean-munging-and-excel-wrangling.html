@@ -34,9 +34,10 @@ the terror of working with a bunch of really messy, really gnarly excel files.</
 <div id="step-1.-reading-in-the-data" class="section level3">
 <h3>Step 1. Reading in the data</h3>
 <p>First things first, let’s load up some useful packages</p>
-<pre class="r"><code>library(tidyverse) 
+<pre class="r"><code>library(tidyverse) </code></pre>
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 3.5.1</code></pre>
+<pre class="r"><code>library(rJava)
 library(readxl)
-library(rJava)
 library(XLConnect)</code></pre>
 <p>We’ll use the handy functions in readxl and XLConnect to read in the the excel sheets and then use tidyverse to do a bunch of stuff to them to clean them up.</p>
 <p>All files can be found at my github repo for <a href="https://github.com/keatonwilson/beans/tree/master/data">this project</a>.</p>
@@ -451,7 +452,7 @@ glimpse(dealer_price_list[[1]])</code></pre>
 <p>Look at how nice that looks! Now it’s time to iterate through all the dataframes. You may be thinking to yourself, “Hey, why don’t you do that with a loop, or with lapply?”. That’s a great idea… except that dataframes vary in their content. Manual brute-force it is.</p>
 <p>Let’s skip ahead a bit - with a bit more munging and cleaning, we end up with a very nice long-format dataframe, that you can find <a href="https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv">here</a>.</p>
 <p>Or alternatively:</p>
-<pre class="r"><code>dealer_price_long = read_csv(file = &quot;https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv&quot;)</code></pre>
+<pre class="r"><code>dealer_price_long = read_csv(file = &quot;https://raw.githubusercontent.com/keatonwilson/beans/master/data/dealer_price_long.csv?token=AefUVKUxTssySEILhpmU2TOfE32UocJfks5bq6gMwA%3D%3D&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
 ##   date = col_date(format = &quot;&quot;),
@@ -462,14 +463,14 @@ glimpse(dealer_price_list[[1]])</code></pre>
 <pre><code>## # A tibble: 23,984 x 3
 ##    date       Class Price
 ##    &lt;date&gt;     &lt;chr&gt; &lt;dbl&gt;
-##  1 1981-01-06 Pinto  32.0
+##  1 1981-01-06 Pinto  32  
 ##  2 1981-01-13 Pinto  32.8
 ##  3 1981-01-20 Pinto  35.5
 ##  4 1981-01-27 Pinto  35.2
 ##  5 1981-02-03 Pinto  35.2
 ##  6 1981-02-10 Pinto  34.8
-##  7 1981-02-18 Pinto  35.0
-##  8 1981-02-24 Pinto  35.0
+##  7 1981-02-18 Pinto  35  
+##  8 1981-02-24 Pinto  35  
 ##  9 1981-03-03 Pinto  34.2
 ## 10 1981-03-10 Pinto  34.2
 ## # ... with 23,974 more rows</code></pre>
