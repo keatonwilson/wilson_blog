@@ -35,7 +35,6 @@ First things first, let's load up some useful packages
 ```{r message = FALSE} 
 library(tidyverse) 
 library(readxl)
-library(rJava)
 library(XLConnect)
 ```
 
