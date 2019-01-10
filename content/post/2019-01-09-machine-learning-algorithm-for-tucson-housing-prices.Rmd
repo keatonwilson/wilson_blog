@@ -20,7 +20,7 @@ library(rmarkdown)
 
 # Introduction
 ***
-The goal of this project has three main components: 1) to scrape a bunch of web data of house information in Tucson (prices, beds, baths, some other stuff), 2) to build a test a series of machine learning models that do a good job of accurately predicting the price a house will sell at and 3) taking this model and building a web interface that folks could use to plug in information on a house in Tucson and get an output.   
+The goal of this project has three main components: 1) to scrape a bunch of web data of house information in Tucson (prices, beds, baths, some other stuff), 2) to build and test a series of machine learning models that do a good job of accurately predicting the price a house will sell at and 3) taking this model and building a web interface that folks could use to plug in information on a house in Tucson and get an output.   
 
 I'm not going to cover the first part of the project because of the murkiness of web-scraping, but so we'll start with part 2 here and hopefully get to part 3 in the upcoming weeks!
 
