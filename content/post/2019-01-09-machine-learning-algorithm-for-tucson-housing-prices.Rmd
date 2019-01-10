@@ -1,0 +1,286 @@
+---
+title: Machine Learning Algorithm for Tucson Housing Prices
+author: Keaton Wilson
+date: '2019-01-09'
+slug: machine-learning-algorithm-for-tucson-housing-prices
+categories:
+  - machine learning
+  - housing
+tags:
+  - prediction
+  - science
+  - visualization  
+summary: >
+  An overview of the workflow to generate a tested and tuned machine learning algorithm that takes recent information about sold in Tucson, AZ and accurately predicts the price they sold for. This is the first step in building an interactive app that people can use to determine the likely sale price of a house. 
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = TRUE)
+library(rmarkdown)
+```
+
+# Introduction
+***
+The goal of this project has three main components: 1) to scrape a bunch of web data of house information in Tucson (prices, beds, baths, some other stuff), 2) to build a test a series of machine learning models that do a good job of accurately predicting the price a house will sell at and 3) taking this model and building a web interface that folks could use to plug in information on a house in Tucson and get an output.   
+
+I'm not going to cover the first part of the project because of the murkiness of web-scraping, but so we'll start with part 2 here and hopefully get to part 3 in the upcoming weeks!
+
+# Loading and cleaning the data  
+
+First, we'll need to load up some packages (there will be quite a few for this).  
+
+```{r, warnings = FALSE, message = FALSE}
+#Packages
+library(skimr) #I like this better than glimpse
+library(tidyverse) #The usual suspects
+library(caret) #Machine Learning  
+library(recipes) #PreProcessing Recipes
+library(lubridate) #We'll do some date stuff
+library(rsample) #Sampling for ML
+library(caretEnsemble) #Ensemble models 
+library(doParallel) #Parallel Processing to speed things up a bit
+```
+
+We'll set up the parallel processing and set the seed. 
+
+```{r}
+#parallel
+detectCores()
+registerDoParallel(cores = 4)
+
+#seed
+set.seed(42)
+```
+
+Now we'll get into the nitty gritty of some data cleaning before we use the `recipes` package to pre-process the data.  
+
+``` {r, warnings = FALSE}
+#Reading in the data
+housing_df = read_csv("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/data/housing_df.csv") #I'm pulling this from my local directory - email me if you want to play with the data. 
+
+housing_df
+
+#Doing a bit of cleaning after looking at the data
+housing_df = housing_df %>%
+  select(-X1, -address) %>%
+  mutate(zip = as.factor(zip),
+         month = month(date_sold), 
+         day = day(date_sold)) %>%
+  select(-date_sold)
+  
+#Take a look at the data using skim
+skim(housing_df)
+
+#Looking at the distribution of prices to see if anything is wonky
+ggplot(housing_df, aes(x = price)) +
+  geom_histogram()
+
+#Removing houses that cost very little (probably errors in price generation)
+housing_df = housing_df %>%
+  filter(price > 50000)
+
+#removing dens at it has price built in
+housing_df = housing_df %>%
+  select(-dens)
+
+#Removing entries with really wrong lats and lons
+housing_df = housing_df %>%
+  filter(lat < 33) 
+```
+
+Great! Now we have a semi-clean data set that contains a lot of useful data to predict price with.  
+Specifically:  
+  1. Price  
+  2. Bedrooms  
+  3. Bathrooms  
+  4. Zip Code  
+  5. Square feet  
+  6. Date Sold  
+  7. Latitude and Longitude  
+
+We need to split into training and test sets and also pre-process (transform, impute) before we start building algorithms. 
+
+```{r}
+
+#Split into train and test using some tools from the rsample package
+train_test_split = initial_split(housing_df)
+housing_train = training(train_test_split)
+housing_test = testing(train_test_split)
+
+#Check for missing
+sum(is.na(housing_df))
+
+#A LOT of missing, but we can try and impute
+tucson_rec = recipe(price ~ ., data = housing_train) %>%
+  #step_log(price, base = 10) %>%
+  step_bagimpute(all_numeric()) %>% #imputation
+  step_YeoJohnson(beds, baths, sqft, -lat, -lon) %>% #YeoJohnson Transformation
+  step_center(beds, baths, sqft, -lat, -lon) %>% #Centering 
+  step_scale(beds, baths, sqft, -lat, -lon) %>% #Scaling
+  step_dummy(all_nominal()) %>% #One Hot Encoding
+  step_bs(lat, lon) #Splines
+
+#Rational for step_bs - Makes sense to include splines above given the complex relationship between lat, lon and price.
+housing_train %>%
+  filter(lat < 33) %>%
+ggplot(aes(y = price, x = lat)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth() +
+  theme_classic()
+
+housing_train %>%
+  filter(lat < 33) %>%
+  ggplot(aes(y = price, x = lon)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth() +
+  theme_classic()
+  
+#Prepping the data
+prepped_tucson = prep(tucson_rec, training = housing_train)
+
+#Generating preprocessed training and test data
+train_data = bake(prepped_tucson, new_data = housing_train)
+test_data = bake(prepped_tucson, new_data = housing_test)
+
+```
+
+# Single-Algorithm Testing and Tuning  
+
+Now the fun begins! We can start to build and test different algorithms to try and predict price. We'll assess models using repeated cross-validation, and do a bit of automatic tuning along the way. Some of these models take a long time - the Random Forest and XGBoost in particular. I'll be loading saved models (RDS objects) to save computational time and not re-build models I've already done, but I'll also provide code on exactly how to work through each model.  
+
+## Linear Regression  
+
+```{r}
+#Setting up the train control object telling caret we want to use repeated cross validation (3 folds with 3 repeats).
+
+train_control = trainControl(method = "repeatedcv", number = 3, repeats = 3)
+```
+
+```{r, eval = FALSE}
+#Tune Length is longer here because linear models are fast - not wise to do this on a random forest.
+lm_mod = train(price ~ ., data = train_data,
+               method = "lm", trControl = train_control, tuneLength = 10)
+```
+
+```{r}
+#loading the RDS object to save time - this won't work for you.
+lm_mod = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/lm_model.rds")
+summary(lm_mod)
+```
+
+Not too bad - a tuned linear regression is giving us an Rsquared of 0.65, meaning the model is predicting 65% of the variation in price. Pretty good for a first pass! We'll test all of our models on out-of-sample test data at the end. For now, let's build the rest of the models.   
+
+```{r, eval = FALSE}
+#Random Forest
+rf_mod = train(price ~ ., data = train_data,
+               method = "ranger", trControl = train_control, 
+               tuneLength = 3, verbose = TRUE)
+
+#XGBoost
+xgboost_mod = train(price ~ ., data = train_data,
+               method = "xgbTree", trControl = train_control, tuneLength = 3)
+
+#Ridge and Lasso - again, longer tune-length here because Ridge and Lasso is relatively fast. 
+ridge_lasso_mod = train(price ~ ., data = train_data,
+                    method = "glmnet", trControl = train_control, tuneLength = 10)
+```
+
+Now let's compare how good our models are on
+
+```{r}
+#Loading previously saved models
+rf_mod = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/rf_model.rds")
+ridge_lasso_mod = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/ridge_lasso_mod.rds")
+xgboost_mod = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/xgboost_model.rds")
+lm_mod = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/lm_model.rds")
+
+#Let's compare models on within sample data
+results <- resamples(list(RandomForest=rf_mod, linearreg=lm_mod, xgboost = xgboost_mod, ridge_lass = ridge_lasso_mod))
+
+# summarize the distributions
+summary(results)
+
+# boxplot of results
+bwplot(results, metric="RMSE", xlim = c(20000, 150000))
+```
+
+Great! We can see that the random forest model is doing significantly better than the rest, with a Root-Mean-Squared-Error of about $44,000. Let's also check out this model's performance on our test data. 
+
+```{r}
+rf_mod_fit = predict(rf_mod, test_data)
+
+postResample(pred = rf_mod_fit, obs = test_data$price)
+```
+
+The RMSE here is a lot higher than in our test data, and the Rsquared is certainly better than the linear regression (0.81 versus 0.6), it still leaves quite a bit to be desired. Let's see if we can use some ensemble methods to improve performance.  
+
+# Ensemble Models  
+
+First, we need to see if our models are good candidates for building an ensemble.  
+```{r}
+#Let's see how much correlation there is between model predictions - ideally, we want models that are fairly uncorrelated. 
+modelCor(results)
+```
+This looks promising! There is some moderate correlation between the outputs of the Ridge and Lasso model and the Random Forest model, but it's not extremely high. This seems like a good candidate to build and test some ensemble models. Let's use the caretList and caretEnsemble tools to buiild an ensemble model. We're going to build a caretList object first, and then build three different ensemble types: a greedy ensemble, a glm ensemble and a random forest ensemble. A warning - these take significant time to build on a normal laptop. I'll be loading previously built models for assessment below
+
+```{r, eval = FALSE, warning=FALSE}
+#SEtting up the train control object
+train_control = trainControl(method = "repeatedcv", number = 3, repeats = 3)
+
+#Building the caret list
+model_list <- caretList(
+  price ~ ., data=train_data,
+  trControl=train_control,
+  metric="RMSE",
+  methodList=c("lm", "ranger", "xgbTree", "glmnet"), 
+  tuneLength = 3
+  )
+
+#building a greedy ensemble
+greedy_ensemble <- caretEnsemble(
+  model_list, 
+  metric="RMSE"
+  )
+
+#glm ensemble
+glm_ensemble <- caretStack(
+  model_list,
+  method="glm",
+  metric="RMSE",
+  trControl=trainControl(
+    method="repeatedcv",
+    number=3,
+    repeats = 3
+  )
+)
+
+#Random Forest meta-model
+rf_ensemble <- caretStack(
+  model_list,
+  method="rf",
+  metric="RMSE",
+  trControl=trainControl(
+    method="repeatedcv",
+    number=3,
+    repeats = 3
+  )
+)
+```
+
+```{r, warnings = FALSE}
+model_list = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/model_list.rds")
+greedy_ensemble = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/greedy_ensemble.rds")
+glm_ensemble = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/glm_ensemble.rds")
+rf_ensemble = readRDS("/Users/KeatonWilson/Documents/Projects/Tucson_Housing_Machine_Learning/output/rf_ensemble.rds")
+
+greedy_fit = predict(greedy_ensemble, test_data)
+glm_fit = predict(glm_ensemble, test_data)
+rf_ens_fit = predict(rf_ensemble, test_data)
+
+postResample(pred = greedy_fit, obs = test_data$price)
+postResample(pred = glm_fit, obs = test_data$price)
+postResample(pred = rf_ens_fit, obs = test_data$price)
+
+```
+
+And there we have it - the best model on out-of-sample test data appears to be either the greedy model or the glm model, which have identical scores on test data, and not the more complex meta-models. We end up with an algorithm that predicts 91.7% of the variation in price, with an RMSE of \$42,909 and an MAE of \$19185. Not bad! We could go through with more complex tuning - but the computational time is getting a bit hairy. For now, this seems like a good predictive tool. Next steps will be implementing this model into a web-based tool that folks can use to assess the price of a house in Tucson! 
+
